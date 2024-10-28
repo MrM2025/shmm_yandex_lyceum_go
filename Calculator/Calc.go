@@ -107,6 +107,38 @@ func ExtractNum(Expression string, indexofnum int) (string, int) {
 	return num, index
 }
 
+func PopNum(sliceofnums []float64, indexofnum int) ([]float64, error) {
+
+	var newsliceofnums []float64
+
+	if indexofnum > len(sliceofnums) {
+		return sliceofnums, fmt.Errorf("index of num > length of slice of nums, %d", indexofnum)
+	}
+	if indexofnum < 0 {
+		return sliceofnums, fmt.Errorf("index of num < 0, %d", indexofnum)
+	}
+
+	newsliceofnums = append(sliceofnums[:indexofnum], sliceofnums[indexofnum+1:]...)
+
+	return newsliceofnums, nil
+}
+
+func PopOp(opslice []int, opindex int) ([]int, error) {
+
+	var newopslice []int
+
+	if opindex > len(opslice) {
+		return opslice, fmt.Errorf("index of operator > length of slice of operator, %d", opindex)
+	}
+	if opindex < 0 {
+		return opslice, fmt.Errorf("index of operator < 0, %d", opindex)
+	}
+
+	newopslice = append(opslice[:opindex], opslice[opindex+1:]...)
+
+	return newopslice, nil
+}
+
 func IsCorrectExpression(Expression string) (bool, error) { //Проверка на правильность заданной строки
 	Expression = strings.Replace(Expression, " ", "", -1)
 	if Expression == "" {
@@ -196,41 +228,8 @@ func IsCorrectExpression(Expression string) (bool, error) { //Проверка �
 	return true, nil
 }
 
-func PopNum(sliceofnums []float64, indexofnum int) ([]float64, error) {
-
-	var newsliceofnums []float64
-
-	if indexofnum > len(sliceofnums) {
-		return sliceofnums, fmt.Errorf("index of num > length of slice of nums, %d", indexofnum)
-	}
-	if indexofnum < 0 {
-		return sliceofnums, fmt.Errorf("index of num < 0, %d", indexofnum)
-	}
-
-	newsliceofnums = append(sliceofnums[:indexofnum], sliceofnums[indexofnum+1:]...)
-
-	return newsliceofnums, nil
-}
-
-func PopOp(opslice []int, opindex int) ([]int, error) {
-
-	var newopslice []int
-
-	if opindex > len(opslice) {
-		return opslice, fmt.Errorf("index of operator > length of slice of operator, %d", opindex)
-	}
-	if opindex < 0 {
-		return opslice, fmt.Errorf("index of operator < 0, %d", opindex)
-	}
-
-	newopslice = append(opslice[:opindex], opslice[opindex+1:]...)
-
-	return newopslice, nil
-}
-
 func TokenizeandCalc(Expression string) (float64, error) {
 	var result float64
-	var outputstring string
 	var operatorsslice []int
 	var numsslice []float64
 	var priority, tempop, countdown int
@@ -243,11 +242,6 @@ func TokenizeandCalc(Expression string) (float64, error) {
 		if IsNumber(Expression[indexoftokenizer]) {
 			num, multiplyindex := ExtractNum(Expression, indexoftokenizer)
 			indexoftokenizer = multiplyindex
-			if indexoftokenizer < length-1 {
-				outputstring += num + ","
-			} else {
-				outputstring += num
-			}
 			numinfloat, _ := strconv.ParseFloat(num, 8)
 			numsslice = append(numsslice, numinfloat)
 		}
@@ -257,7 +251,6 @@ func TokenizeandCalc(Expression string) (float64, error) {
 				operatorsslice = append(operatorsslice, IsOperator(Expression[indexoftokenizer]))
 
 			case IsOperator(Expression[indexoftokenizer]) != 0:
-				outputstring += "+" + ","
 				priority = GetPryority(IsOperator(Expression[indexoftokenizer]))
 				if operatorslicelength-1 >= 0 {
 					if GetPryority(operatorsslice[operatorslicelength-1]) == priority {
@@ -287,17 +280,15 @@ func TokenizeandCalc(Expression string) (float64, error) {
 						}
 						numsslice, _ = PopNum(numsslice, numsliceslength-1)
 						numsslice, _ = PopNum(numsslice, numsliceslength-1)
-						operatorsslice, _ = PopOp(operatorsslice, numsliceslength-1)
+						operatorsslice, _ = PopOp(operatorsslice, operatorslicelength-1)
 						operatorsslice = append(operatorsslice, IsOperator(Expression[indexoftokenizer]))
 						numsslice = append(numsslice, result)
 					}
 
 				}
 			case IsParenthesis(Expression[indexoftokenizer]) == IsLeftParenthesis:
-				outputstring += "(" + ","
 				operatorsslice = append(operatorsslice, IsLeftParenthesis)
 			case IsParenthesis(Expression[indexoftokenizer]) == IsRightParenthesis:
-				outputstring += ")" + ","
 				for {
 					if (operatorsslice[len(operatorsslice)-1]) == IsLeftParenthesis {
 						operatorsslice, _ = PopOp(operatorsslice, len(operatorsslice)-1)
@@ -316,7 +307,6 @@ func TokenizeandCalc(Expression string) (float64, error) {
 			case IsParenthesis(Expression[indexoftokenizer]) == 0 && operatorslicelength > 0:
 				operatorsslice = append(operatorsslice, IsOperator(Expression[indexoftokenizer]))
 			}
-
 		}
 		if indexoftokenizer == length {
 			break
@@ -357,7 +347,7 @@ func Calc(Expression string) (float64, error) {
 }
 
 func main() {
-	fmt.Println(Calc("1*2.54+41+(3/3)-2.5"))
+	fmt.Println(Calc("1*2.54+41+((3/3+10)/2-2.5*10)-1"))
 	fmt.Println(Calc("1+1"))
 	fmt.Println(Calc("(2+2)*2"))
 	fmt.Println(Calc("2+2*2")) //? 6

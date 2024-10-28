@@ -50,7 +50,7 @@ func IsOperator(char byte) int {
 	return IsNotOperation
 }
 
-func MathOp(sliceofnums []float64, operation int) (float64, float64, float64, error) {
+func MathOp(sliceofnums []float64, operation int) (float64, error) {
 	var result float64
 	var lengthofslice int = len(sliceofnums)
 
@@ -66,11 +66,11 @@ func MathOp(sliceofnums []float64, operation int) (float64, float64, float64, er
 		result = num1 * num2
 	case operation == IsDivision:
 		if num2 == 0 {
-			return 0, num1, num2, fmt.Errorf("division by zero")
+			return 0, fmt.Errorf("division by zero")
 		}
 		result = num1 / num2
 	}
-	return result, num1, num2, nil
+	return result, nil
 }
 
 func IsSeparator(char byte) int {
@@ -262,7 +262,7 @@ func TokenizeandCalc(Expression string) (float64, error) {
 				if operatorslicelength-1 >= 0 {
 					if GetPryority(operatorsslice[operatorslicelength-1]) == priority {
 						tempop = operatorsslice[operatorslicelength-1]
-						result, _, _, diverr = MathOp(numsslice, tempop)
+						result, diverr = MathOp(numsslice, tempop)
 						if diverr != nil {
 							return 0, diverr
 
@@ -280,7 +280,7 @@ func TokenizeandCalc(Expression string) (float64, error) {
 						operatorsslice = append(operatorsslice, IsOperator(Expression[indexoftokenizer]))
 					} else if GetPryority(operatorsslice[operatorslicelength-1]) > priority {
 						tempop = operatorsslice[operatorslicelength-1]
-						result, _, _, _ = MathOp(numsslice, tempop)
+						result, _ = MathOp(numsslice, tempop)
 						if diverr != nil {
 							return 0, diverr
 
@@ -303,7 +303,7 @@ func TokenizeandCalc(Expression string) (float64, error) {
 						operatorsslice, _ = PopOp(operatorsslice, len(operatorsslice)-1)
 						break
 					}
-					result, _, _, _ = MathOp(numsslice, operatorsslice[len(operatorsslice)-1])
+					result, _ = MathOp(numsslice, operatorsslice[len(operatorsslice)-1])
 					if diverr != nil {
 						return 0, diverr
 
@@ -328,7 +328,7 @@ func TokenizeandCalc(Expression string) (float64, error) {
 		if countdown < 0 {
 			break
 		} else {
-			result, _, _, _ = MathOp(numsslice, operatorsslice[countdown])
+			result, _ = MathOp(numsslice, operatorsslice[countdown])
 			if diverr != nil {
 				return 0, diverr
 

@@ -68,7 +68,7 @@ func GetPryority(operator int) int {
 	return pryority
 }
 
-func ExtractNum(Expression string, indexofnum int, sliceofnums []float64) ([]float64, int) {
+func ExtractNum(Expression string, indexofnum int, sliceofnums []float64, negative bool) ([]float64, int) {
 	var num string
 	var index int
 	var length int = len(Expression)
@@ -79,6 +79,12 @@ func ExtractNum(Expression string, indexofnum int, sliceofnums []float64) ([]flo
 		}
 		if !IsNumber(Expression[nextnotnumindex]) && IsSeparator(Expression[nextnotnumindex]) == 0 {
 			numfloat64, _ = strconv.ParseFloat(num, 8)
+			if negative && IsParenthesis(Expression[nextnotnumindex]) != IsRightParenthesis {
+				numfloat64 = -numfloat64
+			} else if negative && IsParenthesis(Expression[nextnotnumindex]) == IsRightParenthesis {
+				numfloat64 = -numfloat64
+				nextnotnumindex += 1
+			}
 			sliceofnums = append(sliceofnums, numfloat64)
 
 			return sliceofnums, nextnotnumindex
@@ -87,6 +93,12 @@ func ExtractNum(Expression string, indexofnum int, sliceofnums []float64) ([]flo
 	}
 
 	numfloat64, _ = strconv.ParseFloat(num, 8)
+	if negative && IsParenthesis(Expression[index]) != IsRightParenthesis {
+		numfloat64 = -numfloat64
+	} else if negative && IsParenthesis(Expression[index]) == IsRightParenthesis {
+		numfloat64 = -numfloat64
+		index += 1
+	}
 	sliceofnums = append(sliceofnums, numfloat64)
 
 	return sliceofnums, index
@@ -180,7 +192,7 @@ func IsCorrectExpression(Expression string) (bool, error) { //Проверка �
 			case !IsNumber(Expression[index]) && IsParenthesis(Expression[index]) == 0 && IsOperator(Expression[index]) == 0 && IsSeparator(Expression[index]) == 0: //Недопустимые символы
 				correctexpression = false
 				errorstring += fmt.Sprintf("| incorrect symbol, char %d. Allowed only: %s ", index, "1234567890.*/+-()")
-			case index == 0 && !IsNumber(Expression[index]) && IsParenthesis(Expression[index]) == 0: //Запрещенная последовательность "выражение начинается не числом и не скобкой"
+			case index == 0 && !IsNumber(Expression[index]) && IsParenthesis(Expression[index]) == 0 && IsOperator(Expression[index]) != IsSubtraction: //Запрещенная последовательность "выражение начинается не числом и не скобкой"
 				correctexpression = false
 				errorstring += fmt.Sprintf(`| wrong sequence "non-number character": char %d `, index)
 			case IsOperator(Expression[index]) != 0 && IsOperator(Expression[index+1]) != 0: //Запрещенная последовательность "оператор->оператор"
@@ -265,7 +277,14 @@ func TokenizeandCalc(Expression string) (float64, error) {
 	for indexoftokenizer := 0; indexoftokenizer < length; indexoftokenizer++ {
 		operatorslicelength := len(operatorsslice)
 		if IsNumber(Expression[indexoftokenizer]) {
-			numsslice, indexoftokenizer = ExtractNum(Expression, indexoftokenizer, numsslice)
+			numsslice, indexoftokenizer = ExtractNum(Expression, indexoftokenizer, numsslice, false) //Положительное число
+		} else if !IsNumber(Expression[indexoftokenizer]) && IsOperator(Expression[indexoftokenizer]) == IsSubtraction && IsNumber(Expression[indexoftokenizer+1]) && indexoftokenizer == 0 { // Отрицательное число в начале выражения
+			numsslice, indexoftokenizer = ExtractNum(Expression, indexoftokenizer+1, numsslice, true)
+		} else if IsParenthesis(Expression[indexoftokenizer]) == IsLeftParenthesis && IsOperator(Expression[indexoftokenizer+1]) == IsSubtraction && IsNumber(Expression[indexoftokenizer+2]) { // Отрицательное число после открывающей скобки
+			numsslice, indexoftokenizer = ExtractNum(Expression, indexoftokenizer+2, numsslice, true)
+			if indexoftokenizer == length { // Конец строки после закрывающей скобкой, перед которой отрицательное число
+				break
+			}
 		}
 		if !IsNumber(Expression[indexoftokenizer]) && IsSeparator(Expression[indexoftokenizer]) == 0 {
 			switch {
@@ -342,7 +361,7 @@ func Calc(Expression string) (float64, error) {
 }
 
 func main() {
-	fmt.Println(Calc("1*2.54+41+((3/3+10)/2-2.5*10)-1"))
+	fmt.Println(Calc("1*2.54+41+((3/3+10)/2-(-2.5)*10)-1"))
 	fmt.Println(Calc("1+1"))
 	fmt.Println(Calc("(2+2)*2"))
 	fmt.Println(Calc("2+2*2")) //? 6
@@ -350,4 +369,5 @@ func main() {
 	fmt.Println(Calc("1+1*"))
 	fmt.Println(Calc(""))
 	fmt.Println(Calc("1+((3/3+10)/2-2.5*10)"))
+	fmt.Println(Calc("-1+2+(-3)"))
 }

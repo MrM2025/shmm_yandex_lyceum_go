@@ -86,7 +86,7 @@ func ExtractNum(Expression string, indexofnum int, sliceofnums []float64, negati
 				nextnotnumindex += 1
 			}
 			sliceofnums = append(sliceofnums, numfloat64)
-
+			//fmt.Println("num", numfloat64, nextnotnumindex)
 			return sliceofnums, nextnotnumindex
 		}
 		index = nextnotnumindex
@@ -148,7 +148,7 @@ func Transact(sliceofnums []float64, opslice []int, operator int, addop bool) (f
 		return 0, sliceofnums, opslice, popoperr
 	}
 
-	if poppednums != nil && popnumerr != nil {
+	if poppednums == nil && popnumerr != nil {
 		return 0, sliceofnums, opslice, popnumerr
 	}
 
@@ -282,6 +282,10 @@ func TokenizeandCalc(Expression string) (float64, error) {
 			numsslice, indexoftokenizer = ExtractNum(Expression, indexoftokenizer+1, numsslice, true)
 		} else if IsParenthesis(Expression[indexoftokenizer]) == IsLeftParenthesis && IsOperator(Expression[indexoftokenizer+1]) == IsSubtraction && IsNumber(Expression[indexoftokenizer+2]) { // Отрицательное число после открывающей скобки
 			numsslice, indexoftokenizer = ExtractNum(Expression, indexoftokenizer+2, numsslice, true)
+			if IsNumber(Expression[indexoftokenizer-1]) { // Добавляем в стек операторов открывающую скобку если она не часть выражения вида (-1), описывающего отрицательное число
+				operatorsslice = append(operatorsslice, 1)
+				operatorslicelength++
+			}
 			if indexoftokenizer == length { // Конец строки после закрывающей скобкой, перед которой отрицательное число
 				break
 			}
@@ -326,6 +330,7 @@ func TokenizeandCalc(Expression string) (float64, error) {
 				}
 			}
 		}
+		//fmt.Println(numsslice, operatorsslice)
 	}
 
 	countdown = len(operatorsslice) - 1
@@ -361,7 +366,7 @@ func Calc(Expression string) (float64, error) {
 }
 
 func main() {
-	fmt.Println(Calc("1*2.54+41+((3/3+10)/2-(-2.5)*10)-1"))
+	fmt.Println(Calc("1*2.54+41+((3/3+10)/2-(-2.5-1+(-1))*10)-1"))
 	fmt.Println(Calc("1+1"))
 	fmt.Println(Calc("(2+2)*2"))
 	fmt.Println(Calc("2+2*2")) //? 6

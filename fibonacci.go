@@ -3,7 +3,7 @@ package main
 import "fmt"
 
 func FibonacciRecursivePrint(iterator, previous_digit, current_digit int) int {
-	if iterator < 3 {
+	if iterator < 0 {
 		return -1
 	} else if previous_digit == 0 {
 		fmt.Println(previous_digit, current_digit)

@@ -14,5 +14,5 @@ func Factorial(n int) (int, error) {
 }
 
 func main() {
-	fmt.Println(Factorial(6))
+	fmt.Println(Factorial(3))
 }

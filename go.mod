@@ -1,3 +1,3 @@
-module module-1
+module my_mix
 
 go 1.23.1

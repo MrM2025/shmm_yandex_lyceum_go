@@ -1,4 +1,4 @@
-package main
+package calculator
 
 import (
 	"fmt"
@@ -381,23 +381,4 @@ func (s TCalc) Calc(Expression string) (float64, error) {
 		return result, nil
 	}
 
-}
-
-func main() {
-	var s TCalc
-
-	s.history = make(map[time.Time]map[string]string)
-	fmt.Println(s.Calc("-1+1*2.54+41+((3/3+10)/2-(-2.5-1+(-1))*10)-1"))
-	fmt.Println(s.Calc("1+1"))
-	fmt.Println(s.Calc("(2+2)*2"))
-	fmt.Println(s.Calc("2+2*2")) //? 6
-	fmt.Println(s.Calc("1/2"))
-	fmt.Println(s.Calc("1+1*"))
-	fmt.Println(s.Calc(""))
-	fmt.Println(s.Calc("1+((3/3+10)/2-2.5*10)"))
-	fmt.Println(s.Calc("-1+2+(-3)"))
-	history := s.GetCalcHistory()
-	for key, _ := range history {
-		fmt.Println(key, "result", history[key])
-	}
 }

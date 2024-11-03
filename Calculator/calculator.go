@@ -80,17 +80,22 @@ func getPryority(operator int) int {
 	return pryority
 }
 
-func extractNum(Expression string, indexofnum int, sliceofnums []float64, negative bool) ([]float64, int) {
+func extractNum(Expression string, indexofnum int, sliceofnums []float64, negative bool) ([]float64, int, error) {
 	var num string
 	var index int
 	var length int = len(Expression)
 	var numfloat64 float64
+	var converr error
+
 	for nextnotnumindex := indexofnum; nextnotnumindex < length; nextnotnumindex++ {
 		if isNumber(Expression[nextnotnumindex]) || isSeparator(Expression[nextnotnumindex]) != 0 {
 			num += string(Expression[nextnotnumindex])
 		}
 		if !isNumber(Expression[nextnotnumindex]) && isSeparator(Expression[nextnotnumindex]) == 0 {
-			numfloat64, _ = strconv.ParseFloat(num, 64)
+			numfloat64, converr = strconv.ParseFloat(num, 64)
+			if numfloat64 == 0 && converr != nil {
+				return nil, indexofnum, converr
+			}
 			if negative && isParenthesis(Expression[nextnotnumindex]) != isRightParenthesis {
 				numfloat64 = -numfloat64
 			} else if negative && isParenthesis(Expression[nextnotnumindex]) == isRightParenthesis {
@@ -98,12 +103,15 @@ func extractNum(Expression string, indexofnum int, sliceofnums []float64, negati
 				nextnotnumindex += 1
 			}
 			sliceofnums = append(sliceofnums, numfloat64)
-			return sliceofnums, nextnotnumindex
+			return sliceofnums, nextnotnumindex, nil
 		}
 		index = nextnotnumindex
 	}
 
-	numfloat64, _ = strconv.ParseFloat(num, 64)
+	numfloat64, converr = strconv.ParseFloat(num, 64)
+	if numfloat64 == 0 && converr != nil {
+		return nil, indexofnum, converr
+	}
 	if negative && isParenthesis(Expression[index]) != isRightParenthesis {
 		numfloat64 = -numfloat64
 	} else if negative && isParenthesis(Expression[index]) == isRightParenthesis {
@@ -112,7 +120,7 @@ func extractNum(Expression string, indexofnum int, sliceofnums []float64, negati
 	}
 	sliceofnums = append(sliceofnums, numfloat64)
 
-	return sliceofnums, index
+	return sliceofnums, index, nil
 }
 
 func popNum(sliceofnums []float64, numtopop int) ([]float64, []float64, error) {
@@ -282,7 +290,7 @@ func tokenizeandCalc(Expression string) (float64, error) {
 	var operatorsslice []int
 	var numsslice []float64
 	var priority, countdown int
-	var matherr error
+	var matherr, numconverr error
 
 	check, checkerr := isCorrectExpression(Expression)
 	if !check && checkerr != nil {
@@ -292,11 +300,11 @@ func tokenizeandCalc(Expression string) (float64, error) {
 	for indexoftokenizer := 0; indexoftokenizer < length; indexoftokenizer++ {
 		operatorslicelength := len(operatorsslice)
 		if isNumber(Expression[indexoftokenizer]) {
-			numsslice, indexoftokenizer = extractNum(Expression, indexoftokenizer, numsslice, false) //Положительное число
+			numsslice, indexoftokenizer, numconverr = extractNum(Expression, indexoftokenizer, numsslice, false) //Положительное число
 		} else if !isNumber(Expression[indexoftokenizer]) && isOperator(Expression[indexoftokenizer]) == isSubtraction && isNumber(Expression[indexoftokenizer+1]) && indexoftokenizer == 0 { // Отрицательное число в начале выражения
-			numsslice, indexoftokenizer = extractNum(Expression, indexoftokenizer+1, numsslice, true)
+			numsslice, indexoftokenizer, numconverr = extractNum(Expression, indexoftokenizer+1, numsslice, true)
 		} else if isParenthesis(Expression[indexoftokenizer]) == isLeftParenthesis && isOperator(Expression[indexoftokenizer+1]) == isSubtraction && isNumber(Expression[indexoftokenizer+2]) { // Отрицательное число после открывающей скобки
-			numsslice, indexoftokenizer = extractNum(Expression, indexoftokenizer+2, numsslice, true)
+			numsslice, indexoftokenizer, numconverr = extractNum(Expression, indexoftokenizer+2, numsslice, true)
 			if isNumber(Expression[indexoftokenizer-1]) { // Добавляем в стек операторов открывающую скобку если она не часть выражения вида (-1), описывающего отрицательное число
 				operatorsslice = append(operatorsslice, 1)
 				operatorslicelength++
@@ -304,6 +312,9 @@ func tokenizeandCalc(Expression string) (float64, error) {
 			if indexoftokenizer == length { // Конец строки после закрывающей скобкой, перед которой отрицательное число
 				break
 			}
+		}
+		if numsslice == nil && numconverr != nil {
+			return 0, numconverr
 		}
 		if !isNumber(Expression[indexoftokenizer]) && isSeparator(Expression[indexoftokenizer]) == 0 {
 			switch {

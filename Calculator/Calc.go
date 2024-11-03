@@ -4,20 +4,30 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
-const IsLeftParenthesis = 1
-const IsRightParenthesis = 2
-const IsNotParenthesis = 0
-const IsMultiplication = 10
-const IsDivision = 20
-const IsAddition = 30
-const IsSubtraction = 40
-const IsNotOperation = 0
-const IsPoint = 100
-const IsNotSeparator = 0
+type TCalc struct {
+	history map[time.Time]map[string]string
+}
 
-func IsNumber(char byte) bool {
+type IHistory interface {
+	Calc(Expression string) (float64, error)
+	GetCalcHistory() map[time.Time]map[string]string
+}
+
+const isLeftParenthesis = 1
+const isRightParenthesis = 2
+const isNotParenthesis = 0
+const isMultiplication = 10
+const isDivision = 20
+const isAddition = 30
+const isSubtraction = 40
+const isNotOperation = 0
+const isPoint = 100
+const isNotSeparator = 0
+
+func isNumber(char byte) bool {
 	const numbers = "1234567890"
 	for index, _ := range numbers {
 		if numbers[index] == char {
@@ -27,75 +37,74 @@ func IsNumber(char byte) bool {
 	return false
 }
 
-func IsParenthesis(char byte) int {
+func isParenthesis(char byte) int {
 	if string(char) == "(" {
-		return IsLeftParenthesis
+		return isLeftParenthesis
 	}
 	if string(char) == ")" {
-		return IsRightParenthesis
+		return isRightParenthesis
 	}
-	return IsNotParenthesis
+	return isNotParenthesis
 }
 
-func IsOperator(char byte) int {
+func isOperator(char byte) int {
 	if string(char) == "*" {
-		return IsMultiplication
+		return isMultiplication
 	} else if string(char) == "/" {
-		return IsDivision
+		return isDivision
 	} else if string(char) == "+" {
-		return IsAddition
+		return isAddition
 	} else if string(char) == "-" {
-		return IsSubtraction
+		return isSubtraction
 	}
-	return IsNotOperation
+	return isNotOperation
 }
 
-func IsSeparator(char byte) int {
+func isSeparator(char byte) int {
 	if string(char) == "." {
-		return IsPoint
+		return isPoint
 	}
-	return IsNotSeparator
+	return isNotSeparator
 }
 
-func GetPryority(operator int) int {
+func getPryority(operator int) int {
 	mapofoperators := map[int]int{
-		IsMultiplication: 2,
-		IsDivision:       2,
-		IsAddition:       1,
-		IsSubtraction:    1,
+		isMultiplication: 2,
+		isDivision:       2,
+		isAddition:       1,
+		isSubtraction:    1,
 	}
 	pryority := mapofoperators[operator]
 	return pryority
 }
 
-func ExtractNum(Expression string, indexofnum int, sliceofnums []float64, negative bool) ([]float64, int) {
+func extractNum(Expression string, indexofnum int, sliceofnums []float64, negative bool) ([]float64, int) {
 	var num string
 	var index int
 	var length int = len(Expression)
 	var numfloat64 float64
 	for nextnotnumindex := indexofnum; nextnotnumindex < length; nextnotnumindex++ {
-		if IsNumber(Expression[nextnotnumindex]) || IsSeparator(Expression[nextnotnumindex]) != 0 {
+		if isNumber(Expression[nextnotnumindex]) || isSeparator(Expression[nextnotnumindex]) != 0 {
 			num += string(Expression[nextnotnumindex])
 		}
-		if !IsNumber(Expression[nextnotnumindex]) && IsSeparator(Expression[nextnotnumindex]) == 0 {
+		if !isNumber(Expression[nextnotnumindex]) && isSeparator(Expression[nextnotnumindex]) == 0 {
 			numfloat64, _ = strconv.ParseFloat(num, 8)
-			if negative && IsParenthesis(Expression[nextnotnumindex]) != IsRightParenthesis {
+			if negative && isParenthesis(Expression[nextnotnumindex]) != isRightParenthesis {
 				numfloat64 = -numfloat64
-			} else if negative && IsParenthesis(Expression[nextnotnumindex]) == IsRightParenthesis {
+			} else if negative && isParenthesis(Expression[nextnotnumindex]) == isRightParenthesis {
 				numfloat64 = -numfloat64
 				nextnotnumindex += 1
 			}
 			sliceofnums = append(sliceofnums, numfloat64)
-			//fmt.Println("num", numfloat64, nextnotnumindex)
 			return sliceofnums, nextnotnumindex
 		}
 		index = nextnotnumindex
 	}
 
 	numfloat64, _ = strconv.ParseFloat(num, 8)
-	if negative && IsParenthesis(Expression[index]) != IsRightParenthesis {
+	if negative && isParenthesis(Expression[index]) != isRightParenthesis {
 		numfloat64 = -numfloat64
-	} else if negative && IsParenthesis(Expression[index]) == IsRightParenthesis {
+	} else if negative && isParenthesis(Expression[index]) == isRightParenthesis {
 		numfloat64 = -numfloat64
 		index += 1
 	}
@@ -104,7 +113,7 @@ func ExtractNum(Expression string, indexofnum int, sliceofnums []float64, negati
 	return sliceofnums, index
 }
 
-func PopNum(sliceofnums []float64, numtopop int) ([]float64, []float64, error) {
+func popNum(sliceofnums []float64, numtopop int) ([]float64, []float64, error) {
 
 	var poppednum, newsliceofnums []float64
 
@@ -121,7 +130,7 @@ func PopNum(sliceofnums []float64, numtopop int) ([]float64, []float64, error) {
 	return poppednum, newsliceofnums, nil
 }
 
-func PopOp(opslice []int) (int, []int, error) {
+func popOp(opslice []int) (int, []int, error) {
 
 	var newopslice []int
 
@@ -135,14 +144,14 @@ func PopOp(opslice []int) (int, []int, error) {
 	return poppedop, newopslice, nil
 }
 
-func Transact(sliceofnums []float64, opslice []int, operator int, addop bool) (float64, []float64, []int, error) {
+func transact(sliceofnums []float64, opslice []int, operator int, addop bool) (float64, []float64, []int, error) {
 	var result float64
 	var poppedop int
 	var poppednums []float64
 	var popnumerr, popoperr error
 
-	poppedop, opslice, popoperr = PopOp(opslice)
-	poppednums, sliceofnums, popnumerr = PopNum(sliceofnums, 2)
+	poppedop, opslice, popoperr = popOp(opslice)
+	poppednums, sliceofnums, popnumerr = popNum(sliceofnums, 2)
 
 	if poppedop == 0 && popoperr != nil {
 		return 0, sliceofnums, opslice, popoperr
@@ -153,13 +162,13 @@ func Transact(sliceofnums []float64, opslice []int, operator int, addop bool) (f
 	}
 
 	switch {
-	case poppedop == IsAddition:
+	case poppedop == isAddition:
 		result = poppednums[0] + poppednums[1]
-	case poppedop == IsSubtraction:
+	case poppedop == isSubtraction:
 		result = poppednums[0] - poppednums[1]
-	case poppedop == IsMultiplication:
+	case poppedop == isMultiplication:
 		result = poppednums[0] * poppednums[1]
-	case poppedop == IsDivision:
+	case poppedop == isDivision:
 		if poppednums[1] == 0 {
 			return 0, sliceofnums, opslice, fmt.Errorf("division by zero")
 		}
@@ -174,7 +183,7 @@ func Transact(sliceofnums []float64, opslice []int, operator int, addop bool) (f
 	return result, sliceofnums, opslice, nil
 }
 
-func IsCorrectExpression(Expression string) (bool, error) { //Проверка на правильность заданной строки
+func isCorrectExpression(Expression string) (bool, error) { //Проверка на правильность заданной строки
 
 	var errorstring string
 
@@ -189,34 +198,34 @@ func IsCorrectExpression(Expression string) (bool, error) { //Проверка �
 	for index, _ := range Expression {
 		if index < expressionlength-1 {
 			switch {
-			case !IsNumber(Expression[index]) && IsParenthesis(Expression[index]) == 0 && IsOperator(Expression[index]) == 0 && IsSeparator(Expression[index]) == 0: //Недопустимые символы
+			case !isNumber(Expression[index]) && isParenthesis(Expression[index]) == 0 && isOperator(Expression[index]) == 0 && isSeparator(Expression[index]) == 0: //Недопустимые символы
 				correctexpression = false
 				errorstring += fmt.Sprintf("| incorrect symbol, char %d. Allowed only: %s ", index, "1234567890.*/+-()")
-			case index == 0 && !IsNumber(Expression[index]) && IsParenthesis(Expression[index]) == 0 && IsOperator(Expression[index]) != IsSubtraction: //Запрещенная последовательность "выражение начинается не числом и не скобкой"
+			case index == 0 && !isNumber(Expression[index]) && isParenthesis(Expression[index]) == 0 && isOperator(Expression[index]) != isSubtraction: //Запрещенная последовательность "выражение начинается не числом и не скобкой"
 				correctexpression = false
 				errorstring += fmt.Sprintf(`| wrong sequence "non-number character": char %d `, index)
-			case IsOperator(Expression[index]) != 0 && IsOperator(Expression[index+1]) != 0: //Запрещенная последовательность "оператор->оператор"
+			case isOperator(Expression[index]) != 0 && isOperator(Expression[index+1]) != 0: //Запрещенная последовательность "оператор->оператор"
 				correctexpression = false
 				errorstring += fmt.Sprintf(`| wrong sequence "operation sign->operation sign": chars %d, %d `, index, index+1)
-			case IsSeparator(Expression[index]) != 0 && IsSeparator(Expression[index+1]) != 0: //Запрещенная последовательность "разделитель->разделитель"
+			case isSeparator(Expression[index]) != 0 && isSeparator(Expression[index+1]) != 0: //Запрещенная последовательность "разделитель->разделитель"
 				correctexpression = false
 				errorstring += fmt.Sprintf(`| wrong sequence "multiple separators together": starting from char %d `, index)
-			case IsParenthesis(Expression[index]) != 0 && IsSeparator(Expression[index+1]) != 0: //Запрещенная последовательность "скобка->разделитель дроби"
+			case isParenthesis(Expression[index]) != 0 && isSeparator(Expression[index+1]) != 0: //Запрещенная последовательность "скобка->разделитель дроби"
 				correctexpression = false
 				errorstring += fmt.Sprintf(`| wrong sequence "parenthesis->separator": chars %d, %d `, index, index+1)
-			case IsParenthesis(Expression[index+1]) != 0 && IsSeparator(Expression[index]) != 0: //Запрещенная последовательность "разделитель дроби->скобка"
+			case isParenthesis(Expression[index+1]) != 0 && isSeparator(Expression[index]) != 0: //Запрещенная последовательность "разделитель дроби->скобка"
 				correctexpression = false
 				errorstring += fmt.Sprintf(`| wrong sequence "separator->parenthesis": chars %d, %d `, index, index+1)
-			case IsSeparator(Expression[index]) != 0 && IsOperator(Expression[index+1]) != 0: //Запрещенная последовательность "разделитель дроби->оператор
+			case isSeparator(Expression[index]) != 0 && isOperator(Expression[index+1]) != 0: //Запрещенная последовательность "разделитель дроби->оператор
 				correctexpression = false
 				errorstring += fmt.Sprintf(`| wrong sequence "separator->operation sign": chars %d, %d `, index, index+1)
-			case IsSeparator(Expression[index+1]) != 0 && IsOperator(Expression[index]) != 0: //Запрещенная последовательность "оператор->разделитель дроби"
+			case isSeparator(Expression[index+1]) != 0 && isOperator(Expression[index]) != 0: //Запрещенная последовательность "оператор->разделитель дроби"
 				correctexpression = false
 				errorstring += fmt.Sprintf(`| wrong sequence "operation sign->separator": chars %d, %d `, index, index+1)
-			case IsSeparator(Expression[index]) != 0 && IsNumber(Expression[index+1]) && IsNumber(Expression[index-1]): //Запрещенная последовательность "множественные разделители дроби в числе"
+			case isSeparator(Expression[index]) != 0 && isNumber(Expression[index+1]) && isNumber(Expression[index-1]): //Запрещенная последовательность "множественные разделители дроби в числе"
 				for nextcharindex := index + 1; nextcharindex < expressionlength; nextcharindex++ {
-					if !IsNumber(Expression[nextcharindex]) {
-						if IsSeparator(Expression[nextcharindex]) != 0 {
+					if !isNumber(Expression[nextcharindex]) {
+						if isSeparator(Expression[nextcharindex]) != 0 {
 							correctexpression = false
 							errorstring += fmt.Sprintf(`| wrong sequence "multiple separators within number": starting from char %d `, index)
 							break
@@ -225,28 +234,28 @@ func IsCorrectExpression(Expression string) (bool, error) { //Проверка �
 						}
 					}
 				}
-			case IsParenthesis(Expression[index]) == IsLeftParenthesis && IsParenthesis(Expression[index+1]) == IsRightParenthesis: //Запрещенная последовательность "пустые скобки"
+			case isParenthesis(Expression[index]) == isLeftParenthesis && isParenthesis(Expression[index+1]) == isRightParenthesis: //Запрещенная последовательность "пустые скобки"
 				correctexpression = false
 				errorstring += fmt.Sprintf(`| wrong sequence "empty parentheses": chars %d, %d `, index, index+1)
-			case IsParenthesis(Expression[index]) == IsRightParenthesis && countleftparenthesis == 0: // Запрещенная последовательность "подвыражение начинается с правой скобки"
+			case isParenthesis(Expression[index]) == isRightParenthesis && countleftparenthesis == 0: // Запрещенная последовательность "подвыражение начинается с правой скобки"
 				countrightparenthesis++
 				correctexpression = false
 				errorstring += fmt.Sprintf(`| wrong sequence "beginning form right parenthesis": on char %d `, index)
-			case IsParenthesis(Expression[index]) == IsLeftParenthesis && countleftparenthesis == 0: // Считаем левые и правые скобки
+			case isParenthesis(Expression[index]) == isLeftParenthesis && countleftparenthesis == 0: // Считаем левые и правые скобки
 				countleftparenthesis++
 				for nextcharindex := index + 1; nextcharindex < expressionlength; nextcharindex++ {
-					if IsParenthesis(Expression[nextcharindex]) == IsLeftParenthesis {
+					if isParenthesis(Expression[nextcharindex]) == isLeftParenthesis {
 						countleftparenthesis++
-					} else if IsParenthesis(Expression[nextcharindex]) == IsRightParenthesis {
+					} else if isParenthesis(Expression[nextcharindex]) == isRightParenthesis {
 						countrightparenthesis++
 					}
 
 				}
 			}
-		} else if !IsNumber(Expression[index]) && IsParenthesis(Expression[index]) == 0 && IsOperator(Expression[index]) == 0 && IsSeparator(Expression[index]) == 0 { //Недопустимые символы
+		} else if !isNumber(Expression[index]) && isParenthesis(Expression[index]) == 0 && isOperator(Expression[index]) == 0 && isSeparator(Expression[index]) == 0 { //Недопустимые символы
 			correctexpression = false
 			errorstring += fmt.Sprintf("| incorrect symbol, char %d. Allowed only: %s", index, "1234567890.*/+-()")
-		} else if !IsNumber(Expression[index]) && IsParenthesis(Expression[index]) != IsRightParenthesis && index == expressionlength-1 {
+		} else if !isNumber(Expression[index]) && isParenthesis(Expression[index]) != isRightParenthesis && index == expressionlength-1 {
 			correctexpression = false
 			errorstring += fmt.Sprintf(`| wrong sequence "non-numeric last character"`)
 		}
@@ -266,23 +275,27 @@ func IsCorrectExpression(Expression string) (bool, error) { //Проверка �
 	return true, nil
 }
 
-func TokenizeandCalc(Expression string) (float64, error) {
+func tokenizeandCalc(Expression string) (float64, error) {
 	var result float64
 	var operatorsslice []int
 	var numsslice []float64
 	var priority, countdown int
 	var matherr error
 
+	check, checkerr := isCorrectExpression(Expression)
+	if !check && checkerr != nil {
+		return 0, checkerr
+	}
 	length := len(Expression)
 	for indexoftokenizer := 0; indexoftokenizer < length; indexoftokenizer++ {
 		operatorslicelength := len(operatorsslice)
-		if IsNumber(Expression[indexoftokenizer]) {
-			numsslice, indexoftokenizer = ExtractNum(Expression, indexoftokenizer, numsslice, false) //Положительное число
-		} else if !IsNumber(Expression[indexoftokenizer]) && IsOperator(Expression[indexoftokenizer]) == IsSubtraction && IsNumber(Expression[indexoftokenizer+1]) && indexoftokenizer == 0 { // Отрицательное число в начале выражения
-			numsslice, indexoftokenizer = ExtractNum(Expression, indexoftokenizer+1, numsslice, true)
-		} else if IsParenthesis(Expression[indexoftokenizer]) == IsLeftParenthesis && IsOperator(Expression[indexoftokenizer+1]) == IsSubtraction && IsNumber(Expression[indexoftokenizer+2]) { // Отрицательное число после открывающей скобки
-			numsslice, indexoftokenizer = ExtractNum(Expression, indexoftokenizer+2, numsslice, true)
-			if IsNumber(Expression[indexoftokenizer-1]) { // Добавляем в стек операторов открывающую скобку если она не часть выражения вида (-1), описывающего отрицательное число
+		if isNumber(Expression[indexoftokenizer]) {
+			numsslice, indexoftokenizer = extractNum(Expression, indexoftokenizer, numsslice, false) //Положительное число
+		} else if !isNumber(Expression[indexoftokenizer]) && isOperator(Expression[indexoftokenizer]) == isSubtraction && isNumber(Expression[indexoftokenizer+1]) && indexoftokenizer == 0 { // Отрицательное число в начале выражения
+			numsslice, indexoftokenizer = extractNum(Expression, indexoftokenizer+1, numsslice, true)
+		} else if isParenthesis(Expression[indexoftokenizer]) == isLeftParenthesis && isOperator(Expression[indexoftokenizer+1]) == isSubtraction && isNumber(Expression[indexoftokenizer+2]) { // Отрицательное число после открывающей скобки
+			numsslice, indexoftokenizer = extractNum(Expression, indexoftokenizer+2, numsslice, true)
+			if isNumber(Expression[indexoftokenizer-1]) { // Добавляем в стек операторов открывающую скобку если она не часть выражения вида (-1), описывающего отрицательное число
 				operatorsslice = append(operatorsslice, 1)
 				operatorslicelength++
 			}
@@ -290,21 +303,21 @@ func TokenizeandCalc(Expression string) (float64, error) {
 				break
 			}
 		}
-		if !IsNumber(Expression[indexoftokenizer]) && IsSeparator(Expression[indexoftokenizer]) == 0 {
+		if !isNumber(Expression[indexoftokenizer]) && isSeparator(Expression[indexoftokenizer]) == 0 {
 			switch {
-			case IsOperator(Expression[indexoftokenizer]) != 0:
+			case isOperator(Expression[indexoftokenizer]) != 0:
 				if operatorslicelength-1 >= 0 {
-					priority = GetPryority(IsOperator(Expression[indexoftokenizer]))
-					if GetPryority(operatorsslice[operatorslicelength-1]) == priority {
-						result, numsslice, operatorsslice, matherr = Transact(numsslice, operatorsslice, IsOperator(Expression[indexoftokenizer]), true)
+					priority = getPryority(isOperator(Expression[indexoftokenizer]))
+					if getPryority(operatorsslice[operatorslicelength-1]) == priority {
+						result, numsslice, operatorsslice, matherr = transact(numsslice, operatorsslice, isOperator(Expression[indexoftokenizer]), true)
 						if result == 0 && matherr != nil {
 							return 0, matherr
 
 						}
-					} else if GetPryority(operatorsslice[operatorslicelength-1]) < priority {
-						operatorsslice = append(operatorsslice, IsOperator(Expression[indexoftokenizer]))
-					} else if GetPryority(operatorsslice[operatorslicelength-1]) > priority {
-						result, numsslice, operatorsslice, matherr = Transact(numsslice, operatorsslice, IsOperator(Expression[indexoftokenizer]), true)
+					} else if getPryority(operatorsslice[operatorslicelength-1]) < priority {
+						operatorsslice = append(operatorsslice, isOperator(Expression[indexoftokenizer]))
+					} else if getPryority(operatorsslice[operatorslicelength-1]) > priority {
+						result, numsslice, operatorsslice, matherr = transact(numsslice, operatorsslice, isOperator(Expression[indexoftokenizer]), true)
 						if result == 0 && matherr != nil {
 							return 0, matherr
 
@@ -312,17 +325,17 @@ func TokenizeandCalc(Expression string) (float64, error) {
 					}
 
 				} else {
-					operatorsslice = append(operatorsslice, IsOperator(Expression[indexoftokenizer]))
+					operatorsslice = append(operatorsslice, isOperator(Expression[indexoftokenizer]))
 				}
-			case IsParenthesis(Expression[indexoftokenizer]) == IsLeftParenthesis:
-				operatorsslice = append(operatorsslice, IsLeftParenthesis)
-			case IsParenthesis(Expression[indexoftokenizer]) == IsRightParenthesis:
+			case isParenthesis(Expression[indexoftokenizer]) == isLeftParenthesis:
+				operatorsslice = append(operatorsslice, isLeftParenthesis)
+			case isParenthesis(Expression[indexoftokenizer]) == isRightParenthesis:
 				for {
-					if (operatorsslice[len(operatorsslice)-1]) == IsLeftParenthesis {
-						_, operatorsslice, _ = PopOp(operatorsslice)
+					if (operatorsslice[len(operatorsslice)-1]) == isLeftParenthesis {
+						_, operatorsslice, _ = popOp(operatorsslice)
 						break
 					}
-					result, numsslice, operatorsslice, matherr = Transact(numsslice, operatorsslice, 0, false)
+					result, numsslice, operatorsslice, matherr = transact(numsslice, operatorsslice, 0, false)
 					if result == 0 && matherr != nil {
 						return 0, matherr
 
@@ -330,7 +343,6 @@ func TokenizeandCalc(Expression string) (float64, error) {
 				}
 			}
 		}
-		//fmt.Println(numsslice, operatorsslice)
 	}
 
 	countdown = len(operatorsslice) - 1
@@ -338,7 +350,7 @@ func TokenizeandCalc(Expression string) (float64, error) {
 		if countdown < 0 {
 			break
 		} else {
-			result, numsslice, operatorsslice, matherr = Transact(numsslice, operatorsslice, 0, false)
+			result, numsslice, operatorsslice, matherr = transact(numsslice, operatorsslice, 0, false)
 			if result == 0 && matherr != nil {
 				return 0, matherr
 
@@ -349,30 +361,43 @@ func TokenizeandCalc(Expression string) (float64, error) {
 	return numsslice[0], nil
 }
 
-func Calc(Expression string) (float64, error) {
+func (s TCalc) GetCalcHistory() map[time.Time]map[string]string {
 
-	check, checkerr := IsCorrectExpression(Expression)
-	if check && checkerr == nil {
-		result, calcerr := TokenizeandCalc(Expression)
-		if result == 0 && calcerr != nil {
-			return 0, calcerr
-		} else {
-			return result, nil
-		}
+	return s.history
+}
 
+func (s TCalc) Calc(Expression string) (float64, error) {
+
+	resultmap := make(map[string]string)
+
+	result, calcerr := tokenizeandCalc(Expression)
+	if result == 0 && calcerr != nil {
+		resultmap[Expression] = calcerr.Error()
+		s.history[time.Now()] = resultmap
+		return 0, calcerr
 	} else {
-		return 0, checkerr
+		resultmap[Expression] = strconv.FormatFloat(result, 'g', 8, 64)
+		s.history[time.Now()] = resultmap
+		return result, nil
 	}
+
 }
 
 func main() {
-	fmt.Println(Calc("1*2.54+41+((3/3+10)/2-(-2.5-1+(-1))*10)-1"))
-	fmt.Println(Calc("1+1"))
-	fmt.Println(Calc("(2+2)*2"))
-	fmt.Println(Calc("2+2*2")) //? 6
-	fmt.Println(Calc("1/2"))
-	fmt.Println(Calc("1+1*"))
-	fmt.Println(Calc(""))
-	fmt.Println(Calc("1+((3/3+10)/2-2.5*10)"))
-	fmt.Println(Calc("-1+2+(-3)"))
+	var s TCalc
+
+	s.history = make(map[time.Time]map[string]string)
+	fmt.Println(s.Calc("-1+1*2.54+41+((3/3+10)/2-(-2.5-1+(-1))*10)-1"))
+	fmt.Println(s.Calc("1+1"))
+	fmt.Println(s.Calc("(2+2)*2"))
+	fmt.Println(s.Calc("2+2*2")) //? 6
+	fmt.Println(s.Calc("1/2"))
+	fmt.Println(s.Calc("1+1*"))
+	fmt.Println(s.Calc(""))
+	fmt.Println(s.Calc("1+((3/3+10)/2-2.5*10)"))
+	fmt.Println(s.Calc("-1+2+(-3)"))
+	history := s.GetCalcHistory()
+	for key, _ := range history {
+		fmt.Println(key, "result", history[key])
+	}
 }

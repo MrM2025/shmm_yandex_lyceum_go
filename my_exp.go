@@ -23,7 +23,6 @@ func main() {
 	for key, _ := range history {
 		fmt.Println(key, "result", history[key])
 	}
-	calc.Remove()
-
+	calc.RemoveHistory()
 	fmt.Println("123", calc.GetCalcHistory())
 }

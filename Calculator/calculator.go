@@ -13,9 +13,9 @@ type TCalc struct {
 
 type IHistory interface {
 	Init()
-	Remove()
 	Calc(Expression string) (float64, error)
 	GetCalcHistory() map[time.Time]map[string]string
+	RemoveHistory()
 }
 
 const isLeftParenthesis = 1
@@ -379,7 +379,7 @@ func (s TCalc) Init() TCalc {
 	return s
 }
 
-func (s TCalc) Remove() {
+func (s TCalc) RemoveHistory() {
 	for t := range s.history {
 		delete(s.history, t)
 	}

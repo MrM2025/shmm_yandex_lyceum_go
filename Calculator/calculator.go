@@ -12,6 +12,8 @@ type TCalc struct {
 }
 
 type IHistory interface {
+	Init()
+	Remove()
 	Calc(Expression string) (float64, error)
 	GetCalcHistory() map[time.Time]map[string]string
 }
@@ -88,7 +90,7 @@ func extractNum(Expression string, indexofnum int, sliceofnums []float64, negati
 			num += string(Expression[nextnotnumindex])
 		}
 		if !isNumber(Expression[nextnotnumindex]) && isSeparator(Expression[nextnotnumindex]) == 0 {
-			numfloat64, _ = strconv.ParseFloat(num, 8)
+			numfloat64, _ = strconv.ParseFloat(num, 64)
 			if negative && isParenthesis(Expression[nextnotnumindex]) != isRightParenthesis {
 				numfloat64 = -numfloat64
 			} else if negative && isParenthesis(Expression[nextnotnumindex]) == isRightParenthesis {
@@ -101,7 +103,7 @@ func extractNum(Expression string, indexofnum int, sliceofnums []float64, negati
 		index = nextnotnumindex
 	}
 
-	numfloat64, _ = strconv.ParseFloat(num, 8)
+	numfloat64, _ = strconv.ParseFloat(num, 64)
 	if negative && isParenthesis(Expression[index]) != isRightParenthesis {
 		numfloat64 = -numfloat64
 	} else if negative && isParenthesis(Expression[index]) == isRightParenthesis {
@@ -257,16 +259,16 @@ func isCorrectExpression(Expression string) (bool, error) { //Проверка �
 			errorstring += fmt.Sprintf("| incorrect symbol, char %d. Allowed only: %s", index, "1234567890.*/+-()")
 		} else if !isNumber(Expression[index]) && isParenthesis(Expression[index]) != isRightParenthesis && index == expressionlength-1 {
 			correctexpression = false
-			errorstring += fmt.Sprintf(`| wrong sequence "non-numeric last character"`)
+			errorstring += `| wrong sequence "non-numeric last character"`
 		}
 	}
 
 	if countleftparenthesis < countrightparenthesis { // Не хватает левых скобок
 		correctexpression = false
-		errorstring += fmt.Sprintf(`| wrong sequence "insufficient number of left parentheses"`)
+		errorstring += `| wrong sequence "insufficient number of left parentheses"`
 	} else if countleftparenthesis > countrightparenthesis { // Не хватает правых скобок
 		correctexpression = false
-		errorstring += fmt.Sprintf(`| wrong sequence "insufficient number of right parentheses"`)
+		errorstring += `| wrong sequence "insufficient number of right parentheses"`
 	}
 
 	if !correctexpression {
@@ -359,6 +361,18 @@ func tokenizeandCalc(Expression string) (float64, error) {
 		countdown--
 	}
 	return numsslice[0], nil
+}
+
+func (s TCalc) Init() TCalc {
+	s.history = make(map[time.Time]map[string]string)
+	return s
+}
+
+func (s TCalc) Remove() {
+	for t := range s.history {
+		delete(s.history, t)
+	}
+
 }
 
 func (s TCalc) GetCalcHistory() map[time.Time]map[string]string {

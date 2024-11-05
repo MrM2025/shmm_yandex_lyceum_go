@@ -5,9 +5,10 @@ type Config struct {
 	Height int
 }
 
-func New() *Config {
-	var c Config
+func (c Config) New() *Config {
+
 	c.Width = 100
 	c.Height = 50
+
 	return &c
 }

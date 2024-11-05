@@ -16,7 +16,7 @@ type World struct {
 func NewWorld(height, width int) (*World, error) {
 	var u World
 	if height <= 0 || width <= 0 {
-		return nil, fmt.Errorf("Wrong size")
+		return nil, fmt.Errorf("wrong size")
 	} else {
 		u.Height = height
 		u.Width = width

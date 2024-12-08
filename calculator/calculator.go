@@ -1,4 +1,4 @@
-package CalcD
+package calculator
 
 import (
 	"fmt"

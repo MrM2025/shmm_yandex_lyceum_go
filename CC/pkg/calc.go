@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"github.com/MrM2025/shmm_yandex_lyceum_go/tree/master/CC/pkg"
 	"fmt"
 	"strconv"
 	"strings"
@@ -20,7 +21,7 @@ type IHistory interface {
 
 const isLeftParenthesis = 1
 const isRightParenthesis = 2
-const isNotParenthesis = 0
+const isNotParenthesis = 0	
 const isMultiplication = 10
 const isDivision = 20
 const isAddition = 30

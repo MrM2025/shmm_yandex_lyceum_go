@@ -1,15 +1,13 @@
 package main
 
 import (
-	"calculator"
+	"github.com/MrM2025/shmm_yandex_lyceum_go/tree/master/CC"
 	"fmt"
 )
 
 func main() {
+	app := 
 
-	var calc calculator.TCalc
-
-	calc = calc.Init()
 	fmt.Println(calc.Calc("-1+1*2.54+41+((3/3+10)/2-(-2.5-1+(-1))*10)-1"))
 	fmt.Println(calc.Calc("1+1"))
 	fmt.Println(calc.Calc("(2+2)*2"))
